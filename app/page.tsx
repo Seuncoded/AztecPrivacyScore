@@ -1,71 +1,117 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { questions, ResultAdvice } from '@/lib/questions';
+import { useEffect, useMemo, useState } from 'react';
+import type { allQuestions } from '../lib/questions';
+import { getRandomQuestions, ResultAdvice } from '../lib/questions';
 import clsx from 'clsx';
+import ScoreCard from './components/ScoreCard';
+
+type Question = typeof allQuestions[number];
 
 export default function HomePage() {
+  // --- state ---
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
 
+  // --- effects (client-only randomization) ---
+  useEffect(() => {
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    const seed = buf[0];
+    setQuestions(getRandomQuestions(8, seed));
+  }, []);
+
+  // --- derived values (hooks run every render) ---
   const total = questions.length;
-  const progress = Math.round((step / total) * 100);
 
-  const score = useMemo(() => {
-    return answers.reduce((acc, val) => acc + val, 0);
-  }, [answers]);
-
-  const maxScore = useMemo(() => questions.reduce((a,q)=>a + (q.options.length-1), 0), []);
+  const score = useMemo(() => answers.reduce((a, v) => a + v, 0), [answers]);
+  const maxScore = useMemo(
+    () => questions.reduce((a, q) => a + (q.options.length - 1), 0),
+    [questions]
+  );
   const pct = maxScore === 0 ? 0 : Math.round((score / maxScore) * 100);
+  const progress = total === 0 ? 0 : Math.round((step / total) * 100);
 
   const result: ResultAdvice = useMemo(() => {
-    if (pct >= 80) return { label: 'Privacy Pro', color: 'text-aztec-lime', tips: [
-      'Use Aztec’s private accounts for everyday transactions.',
-      'Leverage Noir-based apps for private DeFi.',
-      'Run a node or prover to strengthen decentralization.'
-    ]};
-    if (pct >= 50) return { label: 'Privacy Aware', color: 'text-yellow-300', tips: [
-      'Avoid reusing public addresses across apps.',
-      'Try Aztec for private swaps and shielded balances.',
-      'Consider ZKPassport when joining validator programs.'
-    ]};
-    return { label: 'Public By Default', color: 'text-red-400', tips: [
-      'Stop posting your main address publicly.',
-      'Move sensitive activity to Aztec’s privacy layer.',
-      'Learn Noir basics to understand selective disclosure.'
-    ]};
+    if (pct >= 80)
+      return {
+        label: 'Privacy Pro',
+        color: 'text-aztec-lavender',
+        tips: [
+          'Use Aztec private accounts for daily transactions.',
+          'Leverage Noir apps for private DeFi.',
+          'Run a node/prover to strengthen decentralization.',
+        ],
+      };
+    if (pct >= 50)
+      return {
+        label: 'Privacy Aware',
+        color: 'text-aztec-light',
+        tips: [
+          'Avoid reusing public addresses.',
+          'Try Aztec for private swaps and shielded balances.',
+          'Use ZKPassport for human proofs where needed.',
+        ],
+      };
+    return {
+      label: 'Public By Default',
+      color: 'text-red-300',
+      tips: [
+        'Stop posting your main address publicly.',
+        'Move sensitive activity to Aztec’s privacy layer.',
+        'Learn Noir basics for selective disclosure.',
+      ],
+    };
   }, [pct]);
 
+  // --- handlers ---
   const onSelect = (value: number) => {
     const next = [...answers];
     next[step] = value;
     setAnswers(next);
   };
-
-  const onNext = () => setStep((s) => Math.min(s + 1, total));
+  const onNext = () => setStep((s) => (s >= total - 1 ? total : s + 1));
   const onPrev = () => setStep((s) => Math.max(s - 1, 0));
-  const onRestart = () => { setAnswers([]); setStep(0); };
+  const onRestart = () => location.reload();
+
+  // --- render while loading ---
+  if (total === 0) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <p className="text-aztec-light">Loading…</p>
+      </main>
+    );
+  }
 
   const finished = step >= total;
+  const hasAnswer = answers[step] !== undefined;
 
   return (
-    <main>
+    <main className="min-h-screen">
       <header className="mb-8">
         <h1 className="text-3xl font-bold">Aztec Privacy Score</h1>
-        <p className="text-aztec-mist mt-2">
-          Answer {total} quick questions about your Web3 habits. We’ll rate your privacy and suggest Aztec-powered fixes.
+        <p className="mt-2 text-aztec-light">
+          Answer {total} quick questions about your Web3 habits. We’ll rate your privacy.
         </p>
       </header>
 
       {!finished ? (
         <section className="space-y-6">
-          <div className="w-full bg-gray-800 rounded-full h-2">
-            <div className="bg-aztec-purple h-2 rounded-full" style={{ width: `${progress}%` }} />
+          {/* Progress */}
+          <div className="progress">
+            <div className="progress-bar" style={{ width: `${progress}%` }} />
           </div>
 
-          <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-6">
-            <div className="text-sm text-aztec-mist mb-2">Question {step + 1} of {total}</div>
-            <h2 className="text-xl font-semibold mb-4">{questions[step].title}</h2>
+          {/* Question Card */}
+          <div className="card p-6">
+            <div className="text-sm text-aztec-light mb-2">
+              Question {step + 1} of {total}
+            </div>
+            <h2 className="text-xl font-semibold mb-4">
+              {questions[step].title}
+            </h2>
+
             <ul className="space-y-3">
               {questions[step].options.map((opt, idx) => {
                 const active = answers[step] === idx;
@@ -75,8 +121,8 @@ export default function HomePage() {
                       className={clsx(
                         'w-full text-left px-4 py-3 rounded-xl border transition',
                         active
-                          ? 'bg-aztec-purple/20 border-aztec-purple'
-                          : 'bg-gray-900 border-gray-800 hover:border-aztec-purple/60'
+                          ? 'border-aztec-mid bg-aztec-mid/20'
+                          : 'border-gray-800 bg-black/20 hover:border-aztec-light'
                       )}
                       onClick={() => onSelect(idx)}
                     >
@@ -91,52 +137,55 @@ export default function HomePage() {
               <button
                 onClick={onPrev}
                 disabled={step === 0}
-                className="px-4 py-2 rounded-lg bg-gray-800 text-sm disabled:opacity-40"
+                className="btn bg-black/30 border border-gray-800 disabled:opacity-40"
               >
                 Back
               </button>
               <button
                 onClick={onNext}
-                className="px-4 py-2 rounded-lg bg-aztec-purple text-white text-sm"
+                disabled={!hasAnswer}
+                className="btn btn-primary disabled:opacity-40"
               >
-                {step === total - 1 ? 'Finish' : 'Next'}
+                {step >= total - 1 ? 'Finish' : 'Next'}
               </button>
             </div>
           </div>
         </section>
       ) : (
-        <section className="bg-gray-900/60 border border-gray-800 rounded-2xl p-6">
-          <h2 className="text-2xl font-bold mb-2">Your Score: <span className={result.color}>{pct}%</span></h2>
-          <p className="text-aztec-mist mb-6">Profile: <span className="text-white">{result.label}</span></p>
+        <section className="space-y-6">
+          {/* Shareable ScoreCard */}
+          <ScoreCard pct={pct} label={result.label} tips={result.tips} />
 
-          <div className="grid gap-3">
-            {result.tips.map((t, i) => (
-              <div key={i} className="p-3 rounded-xl bg-gray-900 border border-gray-800">
-                {t}
-              </div>
-            ))}
-          </div>
+          {/* Actions */}
+          <div className="card p-6">
+            <h3 className="text-lg font-semibold mb-2">
+              Your Score: <span className={result.color}>{pct}%</span>
+            </h3>
+            <p className="text-aztec-light mb-4">
+              Profile: <span className="text-white">{result.label}</span>
+            </p>
 
-          <div className="mt-6 grid sm:grid-cols-2 gap-3">
-            <a
-              className="text-center px-4 py-2 rounded-lg bg-aztec-purple"
-              href="https://aztec.network"
-              target="_blank" rel="noreferrer"
+            <div className="grid gap-3">
+              {result.tips.map((t, i) => (
+                <div key={i} className="rounded-xl border border-gray-800 bg-black/20 p-3">
+                  {t}
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={onRestart}
+              className="btn mt-6 bg-black/30 border border-gray-800 w-full"
             >
-              Learn about Aztec
-            </a>
-            <a
-              className="text-center px-4 py-2 rounded-lg bg-aztec-lime text-black"
-              href="https://noir-lang.org/"
-              target="_blank" rel="noreferrer"
-            >
-              Explore Noir
-            </a>
+              Restart (new questions)
+            </button>
           </div>
-
-          <button onClick={onRestart} className="mt-6 w-full px-4 py-2 rounded-lg bg-gray-800">Restart</button>
         </section>
       )}
+
+      <footer className="text-center text-sm text-aztec-light py-8">
+
+      </footer>
     </main>
   );
 }

@@ -2,4 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: dark; }
+/* App theme tokens (pure CSS) */
+:root {
+  --aztec-dark: #3B1E5E;
+  --aztec-mid: #6B3FA0;
+  --aztec-light: #B188E2;
+  --aztec-lavender: #D0B3F5;
+  --fg: #ffffff;
+}
+
+/* Base page styling */
+html, body {
+  min-height: 100%;
+  background-color: var(--aztec-dark);
+  color: var(--fg);
+}
+
+/* Card + border helpers */
+.card {
+  @apply bg-gray-900/60 border border-gray-800 rounded-2xl;
+}
+.btn {
+  @apply px-4 py-2 rounded-lg text-sm;
+}
+.btn-primary {
+  background-color: var(--aztec-mid);
+  color: #fff;
+}
+.btn-primary:hover {
+  background-color: var(--aztec-light);
+}
+.progress {
+  @apply w-full rounded-full h-2 bg-gray-800;
+}
+.progress-bar {
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: var(--aztec-lavender);
+}

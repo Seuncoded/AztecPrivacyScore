@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-aztec-ink text-white antialiased">
         <div className="max-w-3xl mx-auto px-4 py-8">{children}</div>
         <footer className="text-center text-sm text-aztec-mist py-8">
-          Built by the community • Not affiliated with Aztec Labs
+          Built by the @seuncoded • Not affiliated with Aztec Labs
         </footer>
       </body>
     </html>
