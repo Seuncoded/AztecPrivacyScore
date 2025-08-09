@@ -13,16 +13,13 @@ export async function GET() {
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: 48,
-          background: 'white',
-          color: 'black',
+          background: '#3B1E5E',
+          color: '#D0B3F5',
         }}
       >
         Aztec Privacy Score
       </div>
     ),
-    {
-      width: 1200,
-      height: 630,
-    }
+    { width: 1200, height: 630 }
   );
 }
